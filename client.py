@@ -2,9 +2,16 @@ import socket
 import time
 import random
 import csv
+import os
 from datetime import datetime, timedelta, timezone
 
-# Configura o cliente
+"""
+192.168.1.10 servidor
+192.168.1.11 cliente 1
+192.168.1.12 cliente 2
+192.168.1.13 cliente 3
+
+"""
 SERVER_HOST = "127.0.0.1"
 SERVER_PORT = 12345
 CSV_FILE = "sync_data.csv"
@@ -31,7 +38,6 @@ def request_time():
     return server_time, delay
 
 def synchronize_clock():
-    before_sync = datetime.now(timezone.utc).replace(tzinfo=None) # Remove o timezone
     request_time_sent = time.time()
     server_time, delay = request_time()
     request_time_received = time.time()
@@ -39,15 +45,28 @@ def synchronize_clock():
     # Calcula a latência da rede (Round-Trip Time / 2)
     network_delay = (request_time_received - request_time_sent - delay) / 2 # Metade do RTT
     adjusted_time = server_time +  timedelta(seconds=network_delay) # UTC + p
-    desvio = (before_sync - adjusted_time).total_seconds()  # Diferença entre relógio local e servidor
+
+    current_time = datetime.now(timezone.utc).replace(tzinfo=None)
+    desvio = (current_time - adjusted_time).total_seconds()  # Diferença entre relógio local e servidor
+
 
     with open(CSV_FILE, "a", newline="") as f:
         writer = csv.writer(f)
         writer.writerow([datetime.now(timezone.utc), delay, network_delay, desvio])
 
-    print(f"[CLIENT] Tempo ajustado: {adjusted_time} (Atraso: {network_delay}s)")
-    print(f"[CLIENT] Hora local antes da sincronização: {before_sync}")
+    print(f"[CLIENT] Hora local: {current_time}")
     print(f"[CLIENT] Hora do servidor: {server_time}")
+
+    if abs(desvio) < 0.1:
+        print(f"[CLIENT] Diferença pequena para ajuste: {desvio:.6f}s")
+    else: 
+        new_time = adjusted_time.strftime('%H:%M:%S')
+        new_date = adjusted_time.strftime('%Y-%m-%d')
+
+        os.system(f"sudo date -s '{new_date} {new_time}'")
+
+        print(f"[CLIENT] Tempo ajustado: {adjusted_time} (Atraso: {network_delay:.6f}s)")
+        
 
 if __name__ == "__main__":
     with open(CSV_FILE, "w", newline="") as f:
