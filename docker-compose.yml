@@ -1,0 +1,40 @@
+
+services:
+  server:
+    build: .
+    container_name: time_server
+    networks:
+      - mynetwork
+    ports:
+      - "12345:12345"
+    command: ["python", "server.py"]
+
+  client1:
+    build: .
+    container_name: client1
+    networks:
+      - mynetwork
+    depends_on:
+      - server
+    command: ["python", "client.py"]
+
+  client2:
+    build: .
+    container_name: client2
+    networks:
+      - mynetwork
+    depends_on:
+      - server
+    command: ["python", "client.py"]
+
+  client3:
+    build: .
+    container_name: client3
+    networks:
+      - mynetwork
+    depends_on:
+      - server
+    command: ["python", "client.py"]
+
+networks:
+  mynetwork: 
